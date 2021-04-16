@@ -5,6 +5,7 @@
 import socket
 import ssl
 import sys
+import json
 
 if len(sys.argv) != 3:
     print("Usage: ./smuggling_test.py host \"METHOD URL\"\n\n")
@@ -27,39 +28,52 @@ detect = {
 }
 
 addr = (nhost, 443)
+output = []
 for key, value in detect.iteritems():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ss = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_SSLv23)
+    message, resp = "", ""
     try:
         ss.connect(addr)
-    except BaseException:
-        print "Failed to establish a connection."
-        continue
-    print "Send 15x request: " + str(key)
-    for i in range(1, 15):
-        ss.send(value)
-    datas = ""
-    while 1:
-        data = ss.recv(1024)
-        if not data: break
-        datas += data
-    resp_c = 0
-    resp = ""
-    wait = False
-    for line in datas.split('\n'):
-        if line.startswith('HTTP/1.1 400 Bad Request'):
-            wait = True
-        elif line.startswith('HTTP/1.0 400 Bad request'):
-            wait = True
-        elif line.startswith('HTTP/1.1 '):
-            wait = False
-            resp_c += 1
-        if not wait:
-            resp += line + '\n'
-    if resp_c > 0:
-        print "Technique " + str(key) + " potentiel work., result:\n"
-        print resp
-    else:
-        print "Technique " + str(key) + " not work."
-    ss.close()
-    s.close()
+        print "Send 15x request: " + str(key)
+        for i in range(1, 15):
+            ss.send(value)
+        datas = ""
+        while 1:
+            data = ss.recv(1024)
+            if not data:
+                break
+            datas += data
+        resp_c = 0
+        wait = False
+        for line in datas.split('\n'):
+            if line.startswith('HTTP/1.1 400 Bad Request'):
+                wait = True
+            elif line.startswith('HTTP/1.0 400 Bad request'):
+                wait = True
+            elif line.startswith('HTTP/1.1 '):
+                wait = False
+                resp_c += 1
+            if not wait:
+                resp += line + '\n'
+        if resp_c > 0:
+            message = "Technique " + str(key) + " potentiel work., result:\n"
+            print message
+            print resp
+        else:
+            message = "Technique " + str(key) + " not work."
+            print message
+        ss.close()
+        s.close()
+    # I don't want to use a basic error (Exception) to catch,
+    # but I can't run enough tests to get all the possible errors.
+    except (Exception, OSError, ssl.SSLError):
+        message = "Failed to establish a connection."
+        print message
+    finally:
+        output.append({
+            'message': message,
+            'data': resp
+        })
+with open('output.json', 'w') as f:
+    json.dump(output, f, indent=2)
