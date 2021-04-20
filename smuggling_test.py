@@ -66,8 +66,8 @@ for key, value in detect.iteritems():
         ss.close()
         s.close()
         output.append({
-            'message': message,
-            'response': resp
+            'message': message.strip(),
+            'response': resp.strip()
         })
     # I don't want to use a basic error (Exception) to catch,
     # but I can't run enough tests to get all the possible errors.
