@@ -67,7 +67,7 @@ for key, value in detect.iteritems():
         s.close()
         output.append({
             'message': message,
-            'data': resp
+            'response': resp
         })
     # I don't want to use a basic error (Exception) to catch,
     # but I can't run enough tests to get all the possible errors.
