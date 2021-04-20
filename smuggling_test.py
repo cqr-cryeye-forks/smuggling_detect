@@ -32,7 +32,7 @@ output = []
 for key, value in detect.iteritems():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ss = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_SSLv23)
-    message, resp = "", ""
+    message, resp, error = "", "", ""
     try:
         ss.connect(addr)
         print "Send 15x request: " + str(key)
@@ -65,15 +65,14 @@ for key, value in detect.iteritems():
             print message
         ss.close()
         s.close()
-    # I don't want to use a basic error (Exception) to catch,
-    # but I can't run enough tests to get all the possible errors.
-    except (Exception, OSError, ssl.SSLError):
-        message = "Failed to establish a connection."
-        print message
-    finally:
         output.append({
             'message': message,
             'data': resp
         })
+    # I don't want to use a basic error (Exception) to catch,
+    # but I can't run enough tests to get all the possible errors.
+    except (Exception, OSError, ssl.SSLError):
+        error = "Failed to establish a connection."
+        print error
 with open('output.json', 'w') as f:
     json.dump(output, f, indent=2)
